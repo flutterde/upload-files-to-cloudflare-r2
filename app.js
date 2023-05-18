@@ -1,5 +1,6 @@
 console.log('Hello World!');
 const { S3Client, CreateBucketCommand, PutObjectCommand } = require("@aws-sdk/client-s3");
+const axios = require('axios');
 require('dotenv').config();
 
 
@@ -14,15 +15,29 @@ const minute = date.getMinutes();
 const ranDomNumber = Math.floor(Math.random() * (9999999 - 1000));
 const imageId = 001;
 
+//
+const myBucketName = 'niceone';
 
-const fileName = `${imageId}.txt`;
+
+const fileName = `${imageId}.pdf`;
+
+// ---------------------
+
+
+
+async function downloadFile(url) {
+    const response = await axios.get(url, { responseType: 'arraybuffer' });
+    return response.data;
+}
+
+// ---------------------
 
 
 
 const uploadPath = `files/posts/images/${year}/${month}/${day}/${hour}/${minute}/${ranDomNumber}/`;
 
 
-const s3 = new S3Client({ 
+const s3 = new S3Client({
     region: process.env.R2_REGION,
     endpoint: process.env.R2_ENDPOINT,
     credentials: {
@@ -50,7 +65,7 @@ const createBucket = async (bucketName) => {
     }
 };
 
-const uploadFile = async (bucketName, fileName, fileContent) => {    
+const uploadFile = async (bucketName, fileName, fileContent) => {
     console.log(`Uploading file: ${fileName} to bucket: ${bucketName}`);
     const command = new PutObjectCommand({
         Bucket: bucketName,
@@ -68,12 +83,23 @@ const uploadFile = async (bucketName, fileName, fileContent) => {
 
 // '2023/05/my-file.txt'
 const main = async () => {
-    const myBucketName = 'my-bucket-123456';
-    await createBucket(myBucketName);
-    await uploadFile(myBucketName, `${uploadPath+fileName}`, 'Hello World! this is Bucket 12345');
+    let fileContent;
+
+    await downloadFile('https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf')
+        .then((fileData) => {
+            fileContent = fileData;
+            // Use the fileData variable to upload it to S3 or perform any other operations
+            console.log('File downloaded successfully:', fileData);
+        })
+        .catch((error) => {
+            console.error('Error downloading file:', error);
+        });
+
+    // await createBucket(myBucketName);
+    await uploadFile(myBucketName, `${uploadPath + fileName}`, fileContent);
 };
 
-module.exports = { 
+module.exports = {
     createBucket,
     uploadFile,
 };
